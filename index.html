@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bluesky 6 Months Audit</title>
+  <title>What's your Bluesky Team?</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -26,7 +26,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
       text-align: center; 
       width: 100%;
-      max-width: 360px;
+      max-width: 480px;
       box-sizing: border-box;
     }
 
@@ -61,7 +61,7 @@
       width: 100%;
       max-width: 440px;
       border-radius: 25px; 
-      background: white; 
+      background: white;
       box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
       overflow: hidden; 
       margin: auto;
@@ -91,8 +91,60 @@
       border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
     }
     
-    .card-footer { padding: 0 20px 20px 20px; }
+    .card-footer { padding: 0 20px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
     .btn-download { background: #2d3748; width: 100%; padding: 14px; border-radius: 12px; color: white; border: none; font-family: 'Poppins'; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .btn-banner { background: #0085ff; }
+
+    #bannerTemplate {
+      display: none;
+      width: 1500px;
+      height: 500px;
+      position: absolute;
+      left: -9999px;
+      color: white;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .banner-bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      opacity: 0.1;
+      z-index: -1;
+    }
+
+    .banner-handle { 
+      font-size: 55px; 
+      font-weight: 400; 
+      margin-bottom: 25px; 
+      opacity: 0.95;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .banner-soul-wrapper {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      padding: 35px 80px;
+      border-radius: 100px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+     
+    }
+
+    .banner-soul { 
+      font-size: 110px; 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      letter-spacing: 8px; 
+      margin: 0;
+      line-height: 1;
+      text-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
 
     @media (max-width: 380px) {
       .setup-card { padding: 30px 20px; }
@@ -104,9 +156,9 @@
 <body>
 
   <div class="setup-card" id="setup">
-    <h2 style="margin-top:0">6 Months Audit</h2>
+    <h2 style="margin-top:0">What's your Bluesky Team?</h2>
     <input type="text" id="handle" placeholder="username.bsky.social">
-    <button onclick="runFullAudit()">Start Scanning</button>
+    <button onclick="runFullAudit()">Find out!</button>
     <div id="loading">Scanning posts...</div>
   </div>
 
@@ -127,11 +179,26 @@
 
     <div class="card-footer">
       <button class="btn-download" onclick="saveCard()" id="dlBtn">Download Card</button>
+      <button class="btn-download btn-banner" onclick="saveBanner()" id="dlBannerBtn">Download Banner</button>
+    </div>
+  </div>
+
+  <div id="bannerTemplate">
+    <div class="banner-bg-circle" style="width: 600px; height: 600px; top: -200px; right: -100px;"></div>
+    <div class="banner-bg-circle" style="width: 400px; height: 400px; bottom: -150px; left: -50px;"></div>
+    
+    <div class="banner-handle" id="bHandle">@handle</div>
+    <div class="banner-soul-wrapper">
+        <div class="banner-soul" id="bSoul">SOUL</div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
+    let currentSoul = "";
+    let currentHandle = "";
+    let currentColor = "#0085ff";
+
     async function runFullAudit() {
       let handle = document.getElementById('handle').value.trim().replace('@', '');
       if(!handle) return;
@@ -148,16 +215,11 @@ try {
     }
 
     const profile = await profileResp.json();
-    
-    if (!profile || !profile.did) {
-        if (loadingEl) loadingEl.textContent = "❌ Error: Invalid profile data.";
-        return;
-    }
+    if (!profile || !profile.did) return;
 
     const did = profile.did;
     const created = new Date(profile.createdAt);
     const now = new Date();
-    
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setDate(now.getDate() - 180); 
     
@@ -165,76 +227,36 @@ try {
     let cursor = null;
     let reachedEndOfTimeframe = false;
     
-    console.log("Scan on");
-    console.log("Aujourd'hui : " + now.toLocaleDateString());
-    console.log("Recherche jusqu'au : " + sixMonthsAgo.toLocaleDateString());
-
     while (!reachedEndOfTimeframe) {
           const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${did}&limit=100${cursor ? `&cursor=${cursor}` : ''}`;
           const resp = await fetch(url);
           const data = await resp.json();
-          
           if (!data.feed || data.feed.length === 0) break;
-
-          console.log(`Analyse page ${data.feed.length} posts...`);
 
           for (const item of data.feed) {
             const p = item.post;
             const postDate = new Date(p.indexedAt);
-            
-            if (postDate < sixMonthsAgo) { 
-                continue; 
-            }
+            if (postDate < sixMonthsAgo) continue;
             
             if (p.author.did === did && !item.reason) {
                 ownPostsInScan++;
                 if (item.reply) replyCount++;
-
                 if (p.embed) {
                     const type = p.embed.$type || "";
                     let isOriginalMedia = false;
-                    let mediaUrl = `https://bsky.app/profile/${handle}/post/${p.uri.split('/').pop()}`;
-
                     if (type.includes('app.bsky.embed.images')) {
-                        const images = p.embed.images || [];
-                        isOriginalMedia = images.some(img => {
-                            const alt = (img.alt || "").toUpperCase();
-                            return (img.image?.mimeType || "") !== 'image/gif' && alt !== 'GIF';
-                        });
-                        if (isOriginalMedia) console.log(`IMAGE: ${mediaUrl}`);
+                        isOriginalMedia = (p.embed.images || []).some(img => (img.image?.mimeType || "") !== 'image/gif');
                     } 
-                    else if (type.includes('app.bsky.embed.video')) {
-                        isOriginalMedia = true;
-                        console.log(`VIDEO: ${mediaUrl}`);
-                    }
-                    else if (type.includes('app.bsky.embed.recordWithMedia')) {
-                        const mediaType = p.embed.media?.$type || "";
-                        if (mediaType.includes('images') || mediaType.includes('video')) {
-                            isOriginalMedia = true;
-                            console.log(`QUOTE+MEDIA: ${mediaUrl}`);
-                        }
-                    }
-
-                    if (isOriginalMedia) {
-                        allMediaCount++;
-                    }
+                    else if (type.includes('app.bsky.embed.video')) isOriginalMedia = true;
+                    else if (type.includes('app.bsky.embed.recordWithMedia')) isOriginalMedia = true;
+                    if (isOriginalMedia) allMediaCount++;
                 }
             }
         }
-
         if (data.cursor) {
             cursor = data.cursor;
-            console.log("Page suivante...");
-            
-            const lastPostInPage = new Date(data.feed[data.feed.length - 1].post.indexedAt);
-            if (lastPostInPage < sixMonthsAgo) {
-                console.log("Date limite fin de page. Scan terminé.");
-                reachedEndOfTimeframe = true;
-            }
-        } else {
-            break; 
-        }
-        
+            if (new Date(data.feed[data.feed.length - 1].post.indexedAt) < sixMonthsAgo) reachedEndOfTimeframe = true;
+        } else break;
         if (loadingEl) loadingEl.textContent = `Scanning: ${ownPostsInScan} posts...`;
     }
 
@@ -247,32 +269,26 @@ try {
         let netRatio = profile.followersCount / (profile.followsCount || 1);
 
         let soul;
-		
-		if (imgPerWeek > 12 && dailyRate > 12) 
-			soul = "The Dragon";
-		else if (dailyRate > 12 && replyRatio > 50) 
-			soul = "The Phoenix";
-		else if (dailyRate > 12 && replyRatio <= 50) 
-			soul = "The Chimera";
-		else if (netRatio > 1.8 && replyRatio > 65) 
-			soul = "The Hydra";
-		else if (netRatio > 1.5 && dailyRate < 4) 
-			soul = "The Griffin";
-		else if (imgPerWeek > 4 && dailyRate < 6) 
-			soul = "The Unicorn";
-		else if (dailyRate < 1.2 && replyRatio < 35) 
-			soul = "The Kraken";
-		else 
-			soul = "The Pegasus";
+		if (imgPerWeek > 12 && dailyRate > 12) soul = "Dragons";
+		else if (dailyRate > 12 && replyRatio > 50) soul = "Phoenixes";
+		else if (dailyRate > 12 && replyRatio <= 50) soul = "Chimeras";
+		else if (netRatio > 1.8 && replyRatio > 65) soul = "Hydras";
+		else if (netRatio > 1.5 && dailyRate < 4) soul = "Griffins";
+		else if (imgPerWeek > 4 && dailyRate < 6) soul = "Unicorns";
+		else if (dailyRate < 1.2 && replyRatio < 35) soul = "Krakens";
+		else soul = "Pegasus";
 
         const creatureThemes = {
-          "The Dragon": "#e63946", "The Hydra": "#2a9d8f", "The Phoenix": "#f4a261", 
-          "The Unicorn": "#a29bfe", "The Kraken": "#264653", "The Griffin": "#d4af37", 
-          "The Chimera": "#6d597a", "The Pegasus": "#0085ff"
+          "Dragons": "#e63946", "Hydras": "#2a9d8f", "Phoenixes": "#f4a261", 
+          "Unicorns": "#a29bfe", "Krakens": "#264653", "Griffins": "#d4af37", 
+          "The Chimera": "#6d597a", "Pegasus": "#0085ff"
         };
-        const activeColor = creatureThemes[soul];
-        document.getElementById('cardHeader').style.backgroundColor = activeColor;
-        document.querySelectorAll('.dynamic-color').forEach(el => el.style.color = activeColor);
+        currentColor = creatureThemes[soul];
+        currentSoul = soul;
+        currentHandle = "@" + profile.handle;
+
+        document.getElementById('cardHeader').style.backgroundColor = currentColor;
+        document.querySelectorAll('.dynamic-color').forEach(el => el.style.color = currentColor);
 
         document.getElementById('lblVisual').textContent = `Visual Impact (${timeframeLabel})`;
         document.getElementById('lblInteraction').textContent = `Engagement Style (${timeframeLabel})`;
@@ -312,34 +328,29 @@ try {
         let ageDays = now.getDate() - created.getDate();
         if (ageDays < 0) { ageMonths--; let lastM = new Date(now.getFullYear(), now.getMonth(), 0); ageDays += lastM.getDate(); }
         if (ageMonths < 0) { ageYears--; ageMonths += 12; }
-        let totalMonths = (ageYears * 12) + ageMonths;
         let ageLabel, ageEmo;
         if (ageYears >= 5) { ageLabel = "The Dinosaur<br>Saw it all."; ageEmo = "🦖"; }
-        else if (ageYears >= 3) { ageLabel = "The Old Wolf<br>Wise elder of the pack."; ageEmo = "🐺"; }
+		else if (ageYears >= 3) { ageLabel = "The Tortoise<br>Last through every era."; ageEmo = "🐢"; }
+        else if (ageYears >= 2) { ageLabel = "The Old Wolf<br>Wise elder of the pack."; ageEmo = "🐺"; }
         else if (ageYears >= 1) { ageLabel = "The Swan<br>Graceful and solid presence."; ageEmo = "🦢"; }
-        else if (totalMonths >= 6) { ageLabel = "The Hen<br>Established inhabitant."; ageEmo = "🐔"; }
+        else if (((ageYears * 12) + ageMonths) >= 6) { ageLabel = "The Hen<br>Established inhabitant."; ageEmo = "🐔"; }
         else { ageLabel = "The Chick<br>Freshly hatched on Bluesky."; ageEmo = "🐣"; }
 
         document.getElementById('displayDate').textContent = "Audit Date: " + now.toLocaleDateString();
-        document.getElementById('displayHandle').textContent = "@" + profile.handle;
+        document.getElementById('displayHandle').textContent = currentHandle;
         document.getElementById('soulDisplay').textContent = soul;
-
         document.getElementById('valProfile').innerHTML = net;
         document.getElementById('subProfile').textContent = `${profile.followersCount} followers / ${profile.followsCount} following`;
         document.getElementById('emoProfile').textContent = netEmo;
-
         document.getElementById('valVisual').innerHTML = vis;
         document.getElementById('subVisual').textContent = `${allMediaCount} photos/videos (${imgPerWeek.toFixed(1)}/week)`;
         document.getElementById('emoVisual').textContent = visEmo;
-
         document.getElementById('valInteraction').innerHTML = int;
         document.getElementById('subInteraction').textContent = `${Math.round(replyRatio)}% of posts are replies`;
         document.getElementById('emoInteraction').textContent = intEmo;
-
         document.getElementById('valActivity').innerHTML = act;
         document.getElementById('subActivity').textContent = `${ownPostsInScan} posts (${dailyRate.toFixed(1)}/day)`;
         document.getElementById('emoActivity').textContent = actEmo;
-
         let ageParts = []; if (ageYears > 0) ageParts.push(`${ageYears}y`); if (ageMonths > 0) ageParts.push(`${ageMonths}m`); ageParts.push(`${ageDays}d`);
         document.getElementById('valAge').innerHTML = ageLabel;
         document.getElementById('subAge').textContent = `Joined ${ageParts.join(' ')} ago`;
@@ -352,25 +363,40 @@ try {
     }
 
     function saveCard() {
-  const card = document.getElementById('auditCard');
-  const btn = document.getElementById('dlBtn');
+      const card = document.getElementById('auditCard');
+      const btns = [document.getElementById('dlBtn'), document.getElementById('dlBannerBtn')];
+      btns.forEach(b => b.style.display = 'none');
+      const captureHeight = card.querySelector('.content').getBoundingClientRect().bottom - card.getBoundingClientRect().top;
+      html2canvas(card, { scale: 3, backgroundColor: "#ffffff", height: captureHeight }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `BSKY_Audit_Card.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        btns.forEach(b => b.style.display = 'block');
+      });
+    }
 
-  btn.style.display = 'none';
+    function saveBanner() {
+      const banner = document.getElementById('bannerTemplate');
+      document.getElementById('bHandle').textContent = currentHandle;
+      document.getElementById('bSoul').textContent = currentSoul;
+      
+      banner.style.display = 'flex';
+      banner.style.background = `radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 50%), 
+                                  linear-gradient(135deg, ${currentColor} 0%, ${adjustColor(currentColor, -20)} 100%)`;
 
-  const captureHeight = card.querySelector('.content').getBoundingClientRect().bottom - card.getBoundingClientRect().top;
+      html2canvas(banner, { scale: 1, width: 1500, height: 500, useCORS: true }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `BSKY_Banner.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        banner.style.display = 'none';
+      });
+    }
 
-  html2canvas(card, { 
-    scale: 3, 
-    backgroundColor: "#ffffff", 
-    height: captureHeight
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `BSKY_Audit.png`;
-    link.href = canvas.toDataURL();
-    link.click();
-    btn.style.display = 'block';
-  });
-}
+    function adjustColor(hex, amt) {
+      return '#' + hex.replace(/^#/, '').replace(/../g, hex => ('0' + Math.min(255, Math.max(0, parseInt(hex, 16) + amt)).toString(16)).slice(-2));
+    }
   </script>
 </body>
 </html>
