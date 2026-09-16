@@ -145,6 +145,63 @@
       text-shadow: 0 10px 20px rgba(0,0,0,0.2);
     }
 
+
+    #privacyCardTemplate {
+      display: none;
+      width: 440px;
+      border-radius: 25px;
+      background: white;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+      position: absolute;
+      left: -9999px;
+      top: 0;
+    }
+
+    .privacy-content {
+      padding: 34px 30px 34px;
+      text-align: center;
+      min-height: 270px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .privacy-emoji {
+      font-size: 4rem;
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+
+    .privacy-description {
+      max-width: 360px;
+      margin: 12px auto 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #555;
+    }
+
+    .privacy-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .privacy-team {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .privacy-copy {
+      font-size: 0.88rem;
+      color: #718096;
+    }
+
     @media (max-width: 380px) {
       .setup-card { padding: 30px 20px; }
       .emoji-box { min-width: 45px; height: 45px; font-size: 1.5rem; }
@@ -187,19 +244,23 @@
         <option value="Chimeras">Chimeras</option>
         <option value="Pegasus">Pegasus</option>
       </select>
-	  <button class="btn-download" onclick="saveCard()" id="dlBtn">Download Card</button>
-	  <button class="btn-download btn-avatar" onclick="saveAvatar()" id="dlAvatarBtn">Download Profile Pic</button>
-      <button class="btn-download btn-banner" onclick="saveBanner()" id="dlBannerBtn">Download Banner</button>
+      <button class="btn-download" onclick="saveCard()" id="dlBtn">Download Card</button>
+      <button class="btn-download" onclick="savePrivacyCard()" id="dlPrivacyBtn">Download Card (No Stats)</button>
     </div>
   </div>
 
-  <div id="bannerTemplate">
-    <div class="banner-bg-circle" style="width: 600px; height: 600px; top: -200px; right: -100px;"></div>
-    <div class="banner-bg-circle" style="width: 400px; height: 400px; bottom: -150px; left: -50px;"></div>
-    
-    <div class="banner-handle" id="bHandle">@handle</div>
-    <div class="banner-soul-wrapper">
-        <div class="banner-soul" id="bSoul">SOUL</div>
+
+  <div id="privacyCardTemplate">
+    <div class="card-header" id="privacyHeader">
+      <span class="audit-date" id="privacyDate">Audit Date: --/--/----</span>
+      <span class="user-handle" id="privacyHandle">@handle</span>
+      <div class="soul-persona" id="privacySoul">Analysing...</div>
+    </div>
+    <div class="privacy-content">
+      <div class="privacy-emoji" id="privacyEmoji">✨</div>
+      <div class="privacy-title">My Bluesky Team</div>
+      <div class="privacy-team" id="privacyTeam">Pegasus</div>
+      <div class="privacy-description" id="privacyDescription">A mythological creature shaped by its legendary nature.</div>
     </div>
   </div>
 
@@ -209,12 +270,33 @@
     let currentSoul = "";
     let currentHandle = "";
     let currentColor = "#0085ff";
-	let currentAvatarUrl = "";
 
     const creatureThemes = {
       "Dragons": "#e63946", "Hydras": "#2a9d8f", "Phoenixes": "#f4a261", 
       "Unicorns": "#a29bfe", "Krakens": "#264653", "Griffins": "#d4af37", 
       "Chimeras": "#6d597a", "Pegasus": "#0085ff"
+    };
+
+    const creatureEmojis = {
+      "Dragons": "🐲",
+      "Hydras": "🐍",
+      "Phoenixes": "🐦‍🔥",
+      "Unicorns": "🦄",
+      "Krakens": "🐙",
+      "Griffins": "🦅",
+      "Chimeras": "🦁",
+      "Pegasus": "🐎"
+    };
+
+    const creatureDescriptions = {
+      "Dragons": "Dragons embody power, confidence, and a strong sense of independence. They are often seen as protective and ambitious, drawn to what is rare, valuable, and worth defending. Their presence suggests someone who knows their strength and is not afraid to take up space.",
+      "Hydras": "Hydras represent resilience, adaptability, and relentless persistence. Like their many heads, they suggest a personality full of ideas, perspectives, and ways forward. When faced with an obstacle, they do not simply endure it — they find another angle and keep going.",
+      "Phoenixes": "Phoenixes symbolize renewal, transformation, and the courage to reinvent yourself. They represent people who can turn setbacks into new beginnings, constantly evolving rather than remaining defined by their past. Their strength lies in their ability to rise, change, and start again.",
+      "Unicorns": "Unicorns represent individuality, authenticity, and a sense of wonder. They are associated with people who value what makes them different, follow their own path, and bring a touch of imagination to the world around them. Rare and distinctive, they are comfortable being unmistakably themselves.",
+      "Krakens": "Krakens symbolize depth, mystery, intensity, and quiet power. They evoke personalities that may keep much of themselves beneath the surface, but reveal considerable force when they choose to act. Their strength is not always visible at first — and that is part of their character.",
+      "Griffins": "Griffins embody courage, vigilance, nobility, and a protective spirit. Combining the strength of the lion with the vision of the eagle, they represent people who stand their ground while keeping a clear eye on the bigger picture. They value loyalty, integrity, and defending what matters to them.",
+      "Chimeras": "Chimeras symbolize complexity, versatility, and the freedom to contain contradictions. Made from different creatures, they represent personalities that cannot be reduced to a single trait or identity. They embrace their many sides, mixing qualities that may seem unexpected but ultimately make them unique.",
+      "Pegasus": "Pegasus represents freedom, imagination, inspiration, and the desire to rise above limitations. It evokes people who are curious, creative, and naturally drawn toward new possibilities. Their strength comes from seeing beyond what is already there and giving themselves room to dream.",
     };
 
     function updateUIFromSelect() {
@@ -223,7 +305,7 @@
       
       document.getElementById('cardHeader').style.backgroundColor = selectedColor;
       document.querySelectorAll('.dynamic-color').forEach(el => el.style.color = selectedColor);
-      document.getElementById('soulDisplay').textContent = selectedSoul;
+      document.getElementById('soulDisplay').textContent = `${creatureEmojis[selectedSoul] || ''} ${selectedSoul}`.trim();
       
       currentSoul = selectedSoul;
       currentColor = selectedColor;
@@ -246,8 +328,6 @@
 
     const profile = await profileResp.json();
     
-	currentAvatarUrl = profile.avatar;
-	
     if (!profile || !profile.did) {
         if (loadingEl) loadingEl.textContent = "❌ Error: Invalid profile data.";
         return;
@@ -448,67 +528,31 @@
       });
     }
 
-function saveAvatar() {
-  if (!currentAvatarUrl) { alert("Avatar not found."); return; }
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-  
-  const proxiedUrl = `https://images.weserv.nl/?url=${encodeURIComponent(currentAvatarUrl)}&default=${encodeURIComponent(currentAvatarUrl)}`;
-  img.crossOrigin = "anonymous";
-  img.src = proxiedUrl;
 
-  img.onload = function() {
-    const size = Math.max(img.width, img.height) || 1024;
-    canvas.width = size;
-    canvas.height = size;
-    const radius = size / 2;
+    function savePrivacyCard() {
+      const card = document.getElementById('privacyCardTemplate');
+      const now = new Date();
+      const emoji = creatureEmojis[currentSoul] || '✨';
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(radius, radius, radius, 0, 2 * Math.PI, false);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(img, 0, 0, size, size);
-    ctx.restore();
+      document.getElementById('privacyHeader').style.backgroundColor = currentColor;
+      document.getElementById('privacyDate').textContent = 'Audit Date: ' + now.toLocaleDateString();
+      document.getElementById('privacyHandle').textContent = currentHandle;
+      document.getElementById('privacySoul').textContent = `${emoji} ${currentSoul}`;
+      document.getElementById('privacyEmoji').textContent = emoji;
+      document.getElementById('privacyTeam').textContent = currentSoul;
+      document.getElementById('privacyDescription').textContent = creatureDescriptions[currentSoul] || '';
 
-    const borderThickness = size * 0.025;
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = borderThickness;
-    ctx.beginPath();
-    ctx.arc(radius, radius, radius - (borderThickness / 2), 0, 2 * Math.PI, false);
-    ctx.stroke();
+      card.style.display = 'block';
 
-    const link = document.createElement('a');
-    link.download = `BSKY_Avatar_${currentSoul}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-  img.onerror = function() { alert("Error loading profile picture."); };
-}
-
-    function saveBanner() {
-      const banner = document.getElementById('bannerTemplate');
-      
-      document.getElementById('bHandle').textContent = currentHandle;
-      document.getElementById('bSoul').textContent = currentSoul;
-      
-      banner.style.display = 'flex';
-      banner.style.background = `radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 50%), 
-                                  linear-gradient(135deg, ${currentColor} 0%, ${adjustColor(currentColor, -20)} 100%)`;
-
-      html2canvas(banner, { scale: 1, width: 1500, height: 500, useCORS: true }).then(canvas => {
+      html2canvas(card, { scale: 3, backgroundColor: '#ffffff' }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `BSKY_Banner_${currentSoul}.png`;
-        link.href = canvas.toDataURL();
+        link.download = `BSKY_Team_${currentSoul}_NoStats.png`;
+        link.href = canvas.toDataURL('image/png');
         link.click();
-        banner.style.display = 'none';
+        card.style.display = 'none';
       });
     }
 
-    function adjustColor(hex, amt) {
-      return '#' + hex.replace(/^#/, '').replace(/../g, hex => ('0' + Math.min(255, Math.max(0, parseInt(hex, 16) + amt)).toString(16)).slice(-2));
-    }
   </script>
 </body>
 </html>
