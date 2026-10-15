@@ -519,15 +519,23 @@
       footer.style.display = 'none';
       
       const captureHeight = card.querySelector('.content').getBoundingClientRect().bottom - card.getBoundingClientRect().top;
+      
       html2canvas(card, { scale: 3, backgroundColor: "#ffffff", height: captureHeight }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `BSKY_Audit_Card.png`;
-        link.href = canvas.toDataURL();
-        link.click();
         footer.style.display = oldFooterDisplay;
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `BSKY_Audit_Card.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/png');
       });
     }
-
 
     function savePrivacyCard() {
       const card = document.getElementById('privacyCardTemplate');
@@ -545,11 +553,20 @@
       card.style.display = 'block';
 
       html2canvas(card, { scale: 3, backgroundColor: '#ffffff' }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `BSKY_Team_${currentSoul}_NoStats.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
         card.style.display = 'none';
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const fileName = `BSKY_Team_${currentSoul}_NoStats.png`;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/png');
       });
     }
 
